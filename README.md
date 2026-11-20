@@ -1,7 +1,7 @@
 # Uncommitted
 
 [![Release](https://img.shields.io/github/v/release/dingzy53/obsidian-uncommited?display_name=tag)](https://github.com/dingzy53/obsidian-uncommited/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/dingzy53/obsidian-uncommited/total)](https://github.com/dingzy53/obsidian-uncommited/releases)
+[![Downloads](https://img.shields.io/badge/dynamic/json?label=downloads&logo=obsidian&color=7c3aed&query=%24%5B%22uncommitted%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)](https://community.obsidian.md/plugins/uncommitted)
 [![Obsidian 1.8.0+](https://img.shields.io/badge/Obsidian-1.8.0%2B-7C3AED?logo=obsidian&logoColor=white)](https://obsidian.md)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Desktop only](https://img.shields.io/badge/platform-desktop-lightgrey)](#requirements)
@@ -38,7 +38,11 @@ The diff panel, editor flags, and per-change restore come from Better MD Diff. T
 
 ### From the community directory
 
-Once the plugin is listed, open **Settings → Community plugins → Browse**, search for **Uncommitted**, then select **Install** and **Enable**.
+1. Open **Settings → Community plugins** and turn on community plugins if asked.
+2. Disable **Better MD Diff** if it is enabled.
+3. Select **Browse**, search for **Uncommitted**, then select **Install** and **Enable**.
+
+You can also open the plugin's page: [community.obsidian.md/plugins/uncommitted](https://community.obsidian.md/plugins/uncommitted).
 
 ### Manually
 

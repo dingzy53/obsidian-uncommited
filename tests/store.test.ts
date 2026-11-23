@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DiffStore } from '../src/store';
-import type { GitBaseline } from '../src/git';
+import { GitReadError, type GitBaseline } from '../src/git';
 
 const baseline: GitBaseline = { content: 'old\n', head: 'abc', isNew: false };
 function deferred<T>() {
@@ -135,5 +135,13 @@ describe('diff snapshot store', () => {
     store.dispose(); pending.resolve(baseline); await request;
     expect(store.get('a.md')).toBeUndefined();
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('preserves GitReadError reason in error states', async () => {
+    const store = new DiffStore(async () => {
+      throw new GitReadError('untracked', 'Not tracked.', undefined, 'abc123');
+    });
+    await store.refresh('untracked.md', 'hi\n');
+    expect(store.get('untracked.md')).toMatchObject({ status: 'error', reason: 'untracked' });
   });
 });

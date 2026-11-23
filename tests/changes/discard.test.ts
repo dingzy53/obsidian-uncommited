@@ -87,7 +87,7 @@ function deps(app: App, head: Buffer | null, refresh = vi.fn()) {
   return { app, headBlob: async () => head, refresh };
 }
 
-function openEditor(vault: FakeVault, path: string, content: string) {
+function openEditor(vault: FakeVault, path: string, content: string, mode: 'source' | 'preview' = 'source') {
   const view = new MarkdownView();
   view.file = { path };
   let text = content;
@@ -96,7 +96,7 @@ function openEditor(vault: FakeVault, path: string, content: string) {
     offsetToPos: (offset: number) => ({ line: 0, ch: offset }),
     transaction: vi.fn((transaction: { changes: { text: string }[] }) => { text = transaction.changes[0]!.text; }),
   };
-  Object.assign(view, { containerEl: { isShown: () => true }, getViewData: () => text, editor });
+  Object.assign(view, { containerEl: { isShown: () => true }, getMode: () => mode, getViewData: () => text, editor });
   return { leaf: { view }, editor, text: () => text };
 }
 
@@ -128,6 +128,17 @@ describe('discard effects', () => {
     expect(open.editor.transaction.mock.calls[0]![0].changes).toHaveLength(1);
     expect(open.editor.transaction.mock.calls[0]![0].changes[0]!.text).toBe('HEAD\n');
     expect(open.text()).toBe('HEAD\n');
+  });
+
+  it('restores a note open in Reading view through Vault.process instead of the hidden editor', async () => {
+    const vault = new FakeVault();
+    vault.add('note.md', 'working\n');
+    const head = Buffer.from('HEAD\n');
+    const open = openEditor(vault, 'note.md', 'working\n', 'preview');
+    const app = makeApp(vault, [open.leaf]);
+    await performDiscard(changed('note.md', 'M'), { head, text: 'working\n' }, deps(app, head));
+    expect(open.editor.transaction).not.toHaveBeenCalled();
+    expect(await vault.read(vault.getFileByPath('note.md')!)).toBe('HEAD\n');
   });
 
   it('restores a binary file byte for byte', async () => {

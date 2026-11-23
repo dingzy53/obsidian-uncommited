@@ -34,11 +34,13 @@ export default class BetterMdDiff extends Plugin {
   private revertModal?: RevertChangeModal;
   private gitPollTimer?: number;
   private appliedReadSettings = { ...DEFAULT_SETTINGS };
+  private appliedShowUntracked = DEFAULT_CHANGES_SETTINGS.showUntracked;
 
   async onload(): Promise<void> {
     // fork: read both upstream settings and the changes list settings once.
     const raw = await this.loadData() as Record<string, unknown> | null;
     this.changesSettings = normalizeChangesSettings(raw?.changes, this.changesDefaults());
+    this.appliedShowUntracked = this.changesSettings.showUntracked;
     this.settings = normalizeSettings(raw);
     this.appliedReadSettings = { ...this.settings };
     const adapter = this.app.vault.adapter;
@@ -66,7 +68,6 @@ export default class BetterMdDiff extends Plugin {
       select: (path, line) => this.followSelection(path, line),
     }));
     this.addSettingTab(new DiffSettingTab(this.app, this));
-    this.addRibbonIcon(DIFF_ICON, 'View the current document’s Git diff', () => { void this.openDiff(); });
     const addCommand = (name: string, command: Omit<Command, 'name'>) => {
       this.addCommand({ ...command, name });
     };
@@ -123,7 +124,7 @@ export default class BetterMdDiff extends Plugin {
     }));
     // fork: single hook-in point for the changes list.
     this.changesController = installChanges(this, {
-      openDiff: (path) => this.openDiff(path),
+      openDiff: (path, focus) => this.openDiff(path, undefined, false, focus),
       vaultRoot: adapter.getBasePath(),
       settings: () => this.settings,
       changesSettings: () => this.changesSettings,
@@ -184,7 +185,7 @@ export default class BetterMdDiff extends Plugin {
 
   private untrackedBaseline(error: unknown): GitBaseline {
     if (error instanceof GitReadError && error.reason === 'untracked' && this.changesSettings.showUntracked) {
-      return { content: '', head: null, isNew: true };
+      return { content: '', head: error.head, isNew: true, untracked: true };
     }
     throw error;
   }
@@ -262,13 +263,17 @@ export default class BetterMdDiff extends Plugin {
   private updateStatus(): void {
     if (!this.status) return;
     const state = this.selectedPath ? this.store.get(this.selectedPath) : undefined;
-    const text = state?.status === 'ready' ? `Git +${state.diff.added} −${state.diff.deleted}` : state?.status === 'error' ? 'Git: unavailable' : 'Git Diff';
+    const text = state?.status === 'ready'
+      ? `Git +${state.diff.added} −${state.diff.deleted}`
+      : state?.status === 'error'
+        ? (state.reason === 'untracked' ? 'Git: untracked' : 'Git: unavailable')
+        : 'Git Diff';
     this.status.setText(text);
     this.status.setAttribute('aria-label', `${text}, view diff`);
     this.status.title = state?.status === 'error' ? state.message : 'View the current document’s changes from HEAD';
   }
 
-  async openDiff(path = this.selectedPath, line?: number, preferDeletion = false): Promise<void> {
+  async openDiff(path = this.selectedPath, line?: number, preferDeletion = false, focus = true): Promise<void> {
     if (this.stopped || !this.store) return;
     if (!path) { new Notice('Open a Markdown document first.'); return; }
     const editorView = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -278,7 +283,7 @@ export default class BetterMdDiff extends Plugin {
     if (!leaf) {
       // Add a tab to the sidebar instead of splitting off a short pane below it.
       leaf = this.app.workspace.getRightLeaf(false) ?? this.app.workspace.getLeaf('tab');
-      await leaf.setViewState({ type: DIFF_VIEW, active: true });
+      await leaf.setViewState({ type: DIFF_VIEW, active: focus });
     }
     await this.app.workspace.revealLeaf(leaf);
     if (leaf.view instanceof DiffPanel) {
@@ -385,11 +390,13 @@ export default class BetterMdDiff extends Plugin {
 
   // fork: persist the changes list settings through the same data.json document.
   async saveChangesSettings(): Promise<void> {
-    const showUntracked = this.changesSettings.showUntracked;
     this.changesSettings = normalizeChangesSettings(this.changesSettings, this.changesDefaults());
     await this.saveData({ ...this.settings, changes: this.changesSettings });
     if (this.stopped) return;
-    if (showUntracked !== this.changesSettings.showUntracked) void this.refreshOpenFiles();
+    if (this.appliedShowUntracked !== this.changesSettings.showUntracked) {
+      this.appliedShowUntracked = this.changesSettings.showUntracked;
+      void this.refreshOpenFiles();
+    }
     this.changesController?.requestRefresh();
   }
 

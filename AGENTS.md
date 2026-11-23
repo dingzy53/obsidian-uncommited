@@ -36,7 +36,7 @@ Unicode coverage is still expected: use Latin text with accents and emoji in tes
 
 - Do not reformat, rename, or reorder upstream code.
 - Keep edits to upstream files small and listed here:
-  - `src/main.ts`: install the changes list and hook its settings.
+  - `src/main.ts`: install the changes list, hook its settings, and drop the redundant second ribbon icon.
   - `src/settings.ts`: append the **Changes list** group.
   - `styles.css`: append one delimited changes-list block.
   - `package.json`: add the `install:vault` script.

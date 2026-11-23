@@ -1,10 +1,10 @@
 import { assertTextSize, computeDiff, normalizeText, type DocumentDiff } from './diff';
 import { DEFAULT_SETTINGS, type DocumentLimits } from './options';
-import type { BaselineRead, GitBaseline } from './git';
+import { GitReadError, type BaselineRead, type GitBaseline } from './git';
 
 export type DiffState =
   | { status: 'ready'; path: string; current: string; baseline: GitBaseline; diff: DocumentDiff }
-  | { status: 'error'; path: string; message: string };
+  | { status: 'error'; path: string; message: string; reason?: GitReadError['reason'] };
 
 export type ReadyDiffState = Extract<DiffState, { status: 'ready' }>;
 
@@ -59,7 +59,7 @@ export class DiffStore {
       assertTextSize(current, this.limits);
       current = normalizeText(current);
       const previous = this.states.get(path);
-      if (previous?.status === 'ready' && previous.current === current && previous.baseline.content === baseline.content && previous.baseline.head === baseline.head && previous.baseline.isNew === baseline.isNew) return;
+      if (previous?.status === 'ready' && previous.current === current && previous.baseline.content === baseline.content && previous.baseline.head === baseline.head && previous.baseline.isNew === baseline.isNew && previous.baseline.untracked === baseline.untracked) return;
       this.states.set(path, { status: 'ready', path, current, baseline, diff: computeDiff(baseline.content, current, this.contextLines, this.limits) });
     } catch (error) {
       if (this.disposed || this.revisions.get(path) !== revision) return;
@@ -86,7 +86,8 @@ export class DiffStore {
   }
 
   private errorState(path: string, error: unknown): DiffState {
-    return { status: 'error', path, get message() { return error instanceof Error ? error.message : 'Unable to compute the diff.'; } };
+    const reason = error instanceof GitReadError ? error.reason : undefined;
+    return { status: 'error', path, reason, get message() { return error instanceof Error ? error.message : 'Unable to compute the diff.'; } };
   }
 
   reportError(path: string, message: string): void {

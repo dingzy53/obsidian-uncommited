@@ -444,4 +444,17 @@ describe('diff panel integration', () => {
     expect(button.textContent).toBe('Refresh');
     expect(button.disabled).toBe(false);
   });
+
+  it('labels untracked notes with HEAD commit hash and Untracked badge', async () => {
+    await setup();
+    await store.refresh('untracked.md', 'draft\n', true, async () => ({
+      content: '',
+      head: '1234567890abcdef',
+      isNew: true,
+      untracked: true,
+    }));
+    panel.setFile('untracked.md');
+    expect(document.querySelector('.bmd-ref')?.textContent).toBe('12345678');
+    expect(document.querySelector('.bmd-new-file')?.textContent).toBe('Untracked');
+  });
 });

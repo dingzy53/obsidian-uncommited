@@ -141,8 +141,12 @@ describe('read-only Git HEAD baseline', () => {
   it('reports untracked and ignored documents', async () => {
     await note('.gitignore', 'ignored.md\n');
     await note('note.md', 'new\n'); await note('ignored.md', 'ignored\n');
-    await expect(readGitBaseline(root, 'note.md')).rejects.toMatchObject({ reason: 'untracked' });
-    await expect(readGitBaseline(root, 'ignored.md')).rejects.toMatchObject({ reason: 'untracked' });
+    await expect(readGitBaseline(root, 'note.md')).rejects.toMatchObject({ reason: 'untracked', head: null });
+    await expect(readGitBaseline(root, 'ignored.md')).rejects.toMatchObject({ reason: 'untracked', head: null });
+    await note('committed.md', 'HEAD\n'); await commit();
+    await note('after-commit.md', 'still untracked\n');
+    const head = (await git('rev-parse', 'HEAD')).trim();
+    await expect(readGitBaseline(root, 'after-commit.md')).rejects.toMatchObject({ reason: 'untracked', head });
   });
 
   it('compares staged additions against an empty baseline, including unborn HEAD', async () => {

@@ -82,14 +82,26 @@ Keep `isDesktopOnly: true` and `minAppVersion: 1.8.0`.
 
 ## Cross-Platform E2E Testing
 
-Real-Obsidian E2E tests live in `tests/e2e/**/*.e2e.ts` and run against `test-vault/` via WebdriverIO (`wdio-obsidian-service`).
+### Installation
+
+No global `wdio` installation is required; WebdriverIO and `wdio-obsidian-service` live in `devDependencies`.
 
 ```bash
-npm run build            # Typecheck + production bundle (main.js)
-npm run check:mobile     # Mobile compatibility check (skips automatically if isDesktopOnly: true)
-npm run test:unit        # Run unit tests
-npm run test:e2e:fast    # Desktop latest Obsidian only (fast agent verification)
-npm run test:e2e         # Full matrix configured in wdio.conf.mts
+npm ci
 ```
 
-GitHub Actions workflows in `.github/workflows/e2e.yml` and `.github/workflows/check-new-obsidian.yml` automatically read `manifest.json` (`isDesktopOnly`) to run Linux/Windows/macOS desktop tests (plus mobile emulation and Android API 36 emulator when `isDesktopOnly: false`).
+- The first E2E run automatically downloads and caches Obsidian binaries into `.obsidian-cache/`.
+- Optional: set `OBSIDIAN_CACHE_DIR=/path/to/shared-cache` to reuse a single Obsidian binary cache across repositories.
+- On headless Linux, run E2E commands under `xvfb-run` (macOS and Windows run directly).
+
+### Testing SOP
+
+1. **On every change** (in `tests/e2e/` and `src/`):
+```bash
+npm run build
+npm run check:mobile
+npm run check
+npm run test:e2e:fast    # Desktop latest Obsidian against test-vault/
+```
+2. **Before PR or release**:
+   - Run `npm run test:e2e` (tests `earliest/earliest` + `latest/latest` Obsidian versions) or push to run `.github/workflows/e2e.yml` (Linux/Windows/macOS desktop).

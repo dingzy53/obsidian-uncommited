@@ -10,7 +10,9 @@ export class RevertChangeModal extends Modal {
     this.titleEl.setText('Restore this change?');
     this.contentEl.createEl('p', { cls: 'bmd-revert-path', text: this.path });
     this.contentEl.createEl('p', { cls: 'bmd-revert-scope', text: changeRange(this.change) });
-    this.contentEl.createEl('p', { text: `Restore only this change: remove ${this.change.added} added lines and recover ${this.change.deleted} deleted lines. All other changes stay untouched.` });
+    const addedLines = `${this.change.added} added ${this.change.added === 1 ? 'line' : 'lines'}`;
+    const deletedLines = `${this.change.deleted} deleted ${this.change.deleted === 1 ? 'line' : 'lines'}`;
+    this.contentEl.createEl('p', { text: `Restore only this change: remove ${addedLines} and recover ${deletedLines}. All other changes stay untouched.` });
     const previews = this.contentEl.createDiv({ cls: 'bmd-revert-previews' });
     this.preview(previews, 'Current content', 'added');
     this.preview(previews, 'After restoration (HEAD)', 'deleted');

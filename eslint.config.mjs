@@ -2,7 +2,7 @@ import { defineConfig } from 'eslint/config';
 import obsidianmd from 'eslint-plugin-obsidianmd';
 
 export default defineConfig([
-  { ignores: ['node_modules/**', 'dist/**', 'main.js', '.test-vault/**', 'host-smoke-*/**', 'coverage/**'] },
+  { ignores: ['node_modules/**', 'dist/**', 'main.js', '.test-vault/**', 'host-smoke-*/**', 'coverage/**', '.obsidian-cache/**', 'wdio.conf.mts', 'scripts/check-mobile-compat.mjs', 'tests/e2e/**', 'test-vault/**'] },
   ...obsidianmd.configs.recommended,
   {
     files: ['src/**/*.ts'],

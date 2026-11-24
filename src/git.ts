@@ -12,11 +12,17 @@ export interface GitBaseline {
   content: string;
   head: string | null;
   isNew: boolean;
+  untracked?: boolean;
 }
 export type BaselineRead = (path: string) => Promise<GitBaseline>;
 
 export class GitReadError extends PluginError {
-  constructor(public readonly reason: 'untracked' | 'unavailable' | 'repository' | 'conflict' | 'read', message: string, values?: ErrorValues) { super(message, values); }
+  constructor(
+    public readonly reason: 'untracked' | 'unavailable' | 'repository' | 'conflict' | 'read',
+    message: string,
+    values?: ErrorValues,
+    public readonly head: string | null = null,
+  ) { super(message, values); }
 }
 interface ProcessError extends Error { code?: string | number; stderr?: string; killed?: boolean }
 interface LocatedFile { vaultPath: string; path: string }
@@ -112,7 +118,7 @@ export class GitBaselineReader {
           for (const file of chunk) {
             try {
               const entries = index.get(file.path);
-              if (!entries?.length) throw new GitReadError('untracked', 'This document is not tracked by Git. Run git add, then refresh the diff.');
+              if (!entries?.length) throw new GitReadError('untracked', 'This document is not tracked by Git. Run git add, then refresh the diff.', undefined, head);
               if (entries.some((entry) => !/^\d+ [0-9a-f]+ 0$/.test(entry))) throw new GitReadError('conflict', 'This document has unresolved merge conflicts. Resolve them, then refresh.');
               if (entries.some((entry) => !/^100(?:644|755) /.test(entry))) throw new GitReadError('read', 'Symlinks and submodule files are not supported.');
               const object = tree.get(file.path)?.[0];

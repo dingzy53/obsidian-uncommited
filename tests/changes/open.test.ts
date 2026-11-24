@@ -9,7 +9,7 @@ function changed(path: string, status: ChangedFile['status'] = 'M'): ChangedFile
 }
 
 function makeHost(files: Record<string, { path: string }>, existingMarkdown: string[] = []) {
-  const opened: string[] = [];
+  const opened: Array<{ path: string; state?: unknown }> = [];
   const revealed: string[] = [];
   const leaves = existingMarkdown.map((path) => {
     const view = new MarkdownView();
@@ -19,7 +19,7 @@ function makeHost(files: Record<string, { path: string }>, existingMarkdown: str
   const workspace = {
     getLeavesOfType: (type: string) => type === 'markdown' ? leaves : [],
     revealLeaf: async (leaf: { view: MarkdownView }) => { revealed.push(leaf.view.file!.path); },
-    getLeaf: () => ({ openFile: async (file: { path: string }) => { opened.push(file.path); } }),
+    getLeaf: () => ({ openFile: async (file: { path: string }, state?: unknown) => { opened.push({ path: file.path, state }); } }),
   };
   const vault = { getFileByPath: (path: string) => files[path] ?? null };
   const app = { vault, workspace } as unknown as App;
@@ -34,23 +34,23 @@ describe('click routing', () => {
     await openChangedFile(changed('note.md'), host);
     expect(revealed).toEqual(['note.md']);
     expect(opened).toEqual([]);
-    expect(openDiff).toHaveBeenCalledWith('note.md');
+    expect(openDiff).toHaveBeenCalledWith('note.md', true);
     expect(host.openPlainDiff).not.toHaveBeenCalled();
   });
 
   it('opens a Markdown note in the current tab when it is not open yet', async () => {
     const { host, opened, openDiff } = makeHost({ 'note.md': { path: 'note.md' } });
     await openChangedFile(changed('note.md', 'U'), host);
-    expect(opened).toEqual(['note.md']);
-    expect(openDiff).toHaveBeenCalledWith('note.md');
+    expect(opened).toEqual([{ path: 'note.md', state: { active: true } }]);
+    expect(openDiff).toHaveBeenCalledWith('note.md', true);
   });
 
   it('opens a displayable canvas and the plain diff', async () => {
     const { host, opened, openDiff } = makeHost({ 'board.canvas': { path: 'board.canvas' } });
     await openChangedFile(changed('board.canvas'), host);
-    expect(opened).toEqual(['board.canvas']);
+    expect(opened).toEqual([{ path: 'board.canvas', state: { active: true } }]);
     expect(openDiff).not.toHaveBeenCalled();
-    expect(host.openPlainDiff).toHaveBeenCalledWith('board.canvas');
+    expect(host.openPlainDiff).toHaveBeenCalledWith('board.canvas', true);
   });
 
   it.each(['data.json', 'style.css', 'notes.txt'])('shows only the plain diff for %s', async (path) => {
@@ -58,7 +58,7 @@ describe('click routing', () => {
     await openChangedFile(changed(path), host);
     expect(opened).toEqual([]);
     expect(openDiff).not.toHaveBeenCalled();
-    expect(host.openPlainDiff).toHaveBeenCalledWith(path);
+    expect(host.openPlainDiff).toHaveBeenCalledWith(path, true);
   });
 
   it('shows only the plain diff for deleted files of any type', async () => {
@@ -66,6 +66,19 @@ describe('click routing', () => {
     await openChangedFile(changed('deleted.md', 'D'), host);
     expect(opened).toEqual([]);
     expect(openDiff).not.toHaveBeenCalled();
-    expect(host.openPlainDiff).toHaveBeenCalledWith('deleted.md');
+    expect(host.openPlainDiff).toHaveBeenCalledWith('deleted.md', true);
+  });
+
+  it('passes active: false and focus: false when keeping list focus', async () => {
+    const { host, opened, openDiff, openPlainDiff } = makeHost({
+      'note.md': { path: 'note.md' },
+      'data.json': { path: 'data.json' },
+    });
+    await openChangedFile(changed('note.md'), host, { focus: false });
+    expect(opened[0]).toEqual({ path: 'note.md', state: { active: false } });
+    expect(openDiff).toHaveBeenCalledWith('note.md', false);
+
+    await openChangedFile(changed('data.json'), host, { focus: false });
+    expect(openPlainDiff).toHaveBeenCalledWith('data.json', false);
   });
 });

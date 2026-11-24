@@ -8,7 +8,7 @@ export const CHANGES_ICON = 'git-compare';
 
 export interface ChangesViewHost {
   controller: ChangesController;
-  open(file: ChangedFile): void;
+  open(file: ChangedFile): void | Promise<void>;
   discard(file: ChangedFile): void;
   openSettings(): void;
 }
@@ -294,7 +294,7 @@ export class ChangesView extends ItemView {
     const flair = flairOuter.createSpan({ cls: `tree-item-flair unc-flair ${statusClass(file.status)}`, text: file.status });
     flair.setAttribute('aria-label', label);
     setTooltip(row, fileTooltip(file), { placement: 'right' });
-    row.addEventListener('click', () => this.host.open(file));
+    row.addEventListener('click', () => { void this.host.open(file); });
     row.addEventListener('contextmenu', (event) => {
       event.preventDefault();
       this.showMenu(row, event);
@@ -411,9 +411,13 @@ export class ChangesView extends ItemView {
         else move(row.parentElement?.parentElement?.closest<HTMLElement>('.unc-folder')?.querySelector<HTMLElement>(':scope > .tree-item-self'));
         break;
       case 'Enter':
-      case ' ':
-        row.click();
+      case ' ': {
+        const path = row.dataset.path;
+        const file = !isFolder && path !== undefined ? this.files.get(path) : undefined;
+        if (file && path !== undefined) void this.openFromKeyboard(file, path);
+        else row.click();
         break;
+      }
       case 'ContextMenu':
       case 'F10':
         if (event.key === 'F10' && !event.shiftKey) return;
@@ -423,6 +427,12 @@ export class ChangesView extends ItemView {
         return;
     }
     event.preventDefault();
+  }
+
+  private async openFromKeyboard(file: ChangedFile, path: string): Promise<void> {
+    await this.host.open(file);
+    const current = this.visibleRows().find((el) => el.dataset.path === path);
+    if (current) this.setRovingRow(current, true);
   }
 
   private initializeCollapsed(): void {

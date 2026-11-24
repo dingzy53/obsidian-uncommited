@@ -8,7 +8,7 @@ import { PLAIN_DIFF_VIEW, PlainDiffView } from './plain-diff-view';
 import type { ChangedFile, ChangesSettings, ChangesState } from './types';
 
 export interface ChangesDeps {
-  openDiff(path: string): Promise<void>;
+  openDiff(path: string, focus?: boolean): Promise<void>;
   /** Absolute filesystem path of the vault, which must be the repository root. */
   vaultRoot: string;
   settings(): DiffSettings;
@@ -49,15 +49,19 @@ export function installChanges(plugin: Plugin, deps: ChangesDeps): ChangesContro
     await plugin.app.workspace.ensureSideLeaf(CHANGES_VIEW, 'left', { active: true, reveal: true });
   };
 
-  const openPlainDiff = async (path: string): Promise<void> => {
-    const leaf = await plugin.app.workspace.ensureSideLeaf(PLAIN_DIFF_VIEW, 'right', { active: true, reveal: true, state: { path } });
+  const openPlainDiff = async (path: string, focus = true): Promise<void> => {
+    const leaf = await plugin.app.workspace.ensureSideLeaf(PLAIN_DIFF_VIEW, 'right', { active: focus, reveal: true, state: { path } });
     if (leaf.view instanceof PlainDiffView) await leaf.view.setPath(path);
   };
 
-  const openChanged = (file: ChangedFile): void => {
-    void openChangedFile(file, { app: plugin.app, openDiff: (path) => deps.openDiff(path), openPlainDiff })
-      .catch((error: unknown) => { new Notice(error instanceof Error ? error.message : 'Unable to open this file.'); });
-  };
+  const openChanged = (file: ChangedFile, focus = true): Promise<void> =>
+    openChangedFile(file, {
+      app: plugin.app,
+      openDiff: (path, shouldFocus) => deps.openDiff(path, shouldFocus),
+      openPlainDiff,
+    }).catch((error: unknown) => {
+      new Notice(error instanceof Error ? error.message : 'Unable to open this file.');
+    });
 
   const discard = (file: ChangedFile): void => {
     new DiscardModal(plugin.app, file, {
@@ -77,7 +81,7 @@ export function installChanges(plugin: Plugin, deps: ChangesDeps): ChangesContro
   controller.load(); // Idempotent: addChild already loads it when the plugin is loaded.
   plugin.registerView(CHANGES_VIEW, (leaf) => new ChangesView(leaf, {
     controller,
-    open: openChanged,
+    open: (file) => openChanged(file, false),
     discard,
     openSettings,
   }));
@@ -106,7 +110,7 @@ export function installChanges(plugin: Plugin, deps: ChangesDeps): ChangesContro
         if (!controller.files().length) return false;
         if (!checking) {
           const file = controller.adjacent(direction);
-          if (file) openChanged(file);
+          if (file) void openChanged(file);
         }
         return true;
       },

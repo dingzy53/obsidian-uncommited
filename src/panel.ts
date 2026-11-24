@@ -261,7 +261,7 @@ export class DiffPanel extends ItemView {
     const digits = String(Math.max(state.diff.lineCount, state.diff.lineCount - state.diff.added + state.diff.deleted)).length;
     this.contentEl.style.setProperty('--bmd-line-digits', `${Math.max(3, digits)}ch`);
     if (state !== this.rendered) this.reconcile(state);
-    const summaryKey = JSON.stringify([this.path, state.baseline.head, state.baseline.isNew, state.diff.added, state.diff.deleted, settings.inlineHighlights, settings.showWhitespace, this.cards.some((card) => card.limited)]);
+    const summaryKey = JSON.stringify([this.path, state.baseline.head, state.baseline.isNew, state.baseline.untracked, state.diff.added, state.diff.deleted, settings.inlineHighlights, settings.showWhitespace, this.cards.some((card) => card.limited)]);
     if (summaryKey !== this.summaryKey) {
       this.summaryKey = summaryKey; this.summary.empty();
       const heading = this.summary.createDiv({ cls: 'bmd-summary-heading' });
@@ -272,9 +272,11 @@ export class DiffPanel extends ItemView {
       reference.createEl('code', { cls: 'bmd-ref', text: state.baseline.head?.slice(0, 8) ?? 'no commits yet', attr: { title: state.baseline.head ?? 'no commits yet' } });
       base.createSpan({ cls: 'bmd-base-arrow', text: '→', attr: { 'aria-hidden': 'true' } });
       base.createSpan({ text: 'Current content' });
-      if (state.baseline.isNew) base.createSpan({ cls: 'bmd-new-file', text: 'Newly tracked' });
+      if (state.baseline.isNew) base.createSpan({ cls: 'bmd-new-file', text: state.baseline.untracked ? 'Untracked' : 'Newly tracked' });
       if (state.diff.added || state.diff.deleted) {
-        const stats = heading.createDiv({ cls: 'bmd-stats', attr: { role: 'group', 'aria-label': `${state.diff.added} added lines, ${state.diff.deleted} deleted lines` } });
+        const addedLabel = `${state.diff.added} added ${state.diff.added === 1 ? 'line' : 'lines'}`;
+        const deletedLabel = `${state.diff.deleted} deleted ${state.diff.deleted === 1 ? 'line' : 'lines'}`;
+        const stats = heading.createDiv({ cls: 'bmd-stats', attr: { role: 'group', 'aria-label': `${addedLabel}, ${deletedLabel}` } });
         if (state.diff.added) stats.createSpan({ cls: 'bmd-stat-added', text: `+${state.diff.added}`, attr: { title: `+${state.diff.added} added` } });
         if (state.diff.deleted) stats.createSpan({ cls: 'bmd-stat-deleted', text: `−${state.diff.deleted}`, attr: { title: `−${state.diff.deleted} deleted` } });
       }

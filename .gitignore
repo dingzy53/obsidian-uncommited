@@ -14,3 +14,8 @@ host-smoke-*/
 Thumbs.db
 __pycache__/
 *.py[cod]
+
+# WebdriverIO E2E
+.obsidian-cache/
+obsidian-versions-lock.txt
+test-vault/.obsidian/

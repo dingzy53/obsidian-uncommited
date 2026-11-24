@@ -158,7 +158,7 @@ try:
         assert page.locator('.bmd-region-heading button').count() == 2
         page.locator('.notice.is-loading').wait_for(state='hidden', timeout=60000)
         assert page.locator('.workspace-tab-header .lucide-file-diff').count() == 1
-        assert page.locator('.side-dock-ribbon-action .lucide-file-diff').count() == 1
+        assert page.locator('.side-dock-ribbon-action .lucide-git-compare').count() == 1
         page.locator('.nav-file-title[data-path="sample.md"]').click(button='right')
         assert page.locator('.menu-item .lucide-file-diff').count() == 1
         page.screenshot(path=str(case / 'diff-icon.png'))

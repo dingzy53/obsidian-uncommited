@@ -32,11 +32,12 @@ function toArrayBuffer(buffer: Buffer): ArrayBuffer {
   return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
 }
 
-function openView(app: App, path: string): MarkdownView | undefined {
+function openEditView(app: App, path: string): MarkdownView | undefined {
   const views = app.workspace.getLeavesOfType('markdown')
     .map((leaf) => leaf.view)
-    .filter((view): view is MarkdownView => view instanceof MarkdownView && view.file?.path === path);
-  return views.find((view) => view.containerEl.isShown()) ?? views[0];
+    .filter((view): view is MarkdownView =>
+      view instanceof MarkdownView && view.file?.path === path && view.getMode() === 'source' && view.containerEl.isShown());
+  return views[0];
 }
 
 function checkStat(snapshot: Snapshot, file: TFile): void {
@@ -65,7 +66,7 @@ async function capture(app: App, file: ChangedFile, head: Buffer | null): Promis
   if (!target) throw new Error(UNINDEXED);
   if (file.binary) return { head, stat: { size: target.stat.size, mtime: target.stat.mtime } };
   if (file.status === 'A' || file.status === 'U') return { head, stat: { size: target.stat.size, mtime: target.stat.mtime } };
-  const view = openView(app, file.path);
+  const view = openEditView(app, file.path);
   return { head, text: view ? view.getViewData() : await app.vault.read(target) };
 }
 
@@ -94,7 +95,7 @@ export async function performDiscard(file: ChangedFile, snapshot: Snapshot, deps
       await app.vault.modifyBinary(target, toArrayBuffer(head));
       return;
     }
-    const view = openView(app, file.path);
+    const view = openEditView(app, file.path);
     const current = view ? view.getViewData() : await app.vault.read(target);
     if (snapshot.text === undefined || current !== snapshot.text) throw new Error(STALE);
     if (!head) throw new Error(NO_HEAD);

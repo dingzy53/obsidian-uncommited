@@ -293,6 +293,8 @@ describe('changes view', () => {
     row(view, 'root.md').focus();
     press('Enter');
     expect(setup.open).toHaveBeenCalledWith(expect.objectContaining({ path: 'root.md' }));
+    await Promise.resolve();
+    expect(document.activeElement).toBe(row(view, 'root.md'));
     row(view, 'a').focus();
     press(' ');
     expect(row(view, 'a/b.md')).toBeNull();

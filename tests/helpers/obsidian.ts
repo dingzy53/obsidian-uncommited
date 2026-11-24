@@ -75,6 +75,7 @@ export function debounce<T extends unknown[]>(callback: (...args: T) => void, ti
 
 export class MarkdownView {
   file: { path: string } | null = null;
+  getMode(): 'source' | 'preview' { return 'source'; }
 }
 
 export class TFolder {

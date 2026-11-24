@@ -51,7 +51,7 @@ describe('restoration confirmation UI', () => {
     const confirm = vi.fn(async () => {});
     const modal = new RevertChangeModal({} as App, 'example.md', change, confirm);
     modal.open();
-    expect(document.body.textContent).toContain('remove 1 added lines and recover 1 deleted lines');
+    expect(document.body.textContent).toContain('remove 1 added line and recover 1 deleted line');
     expect(confirm).not.toHaveBeenCalled();
     const button = Array.from(document.querySelectorAll('button')).find((item) => item.textContent === 'Confirm restoration')!;
     expect(button.classList.contains(modern ? 'mod-destructive' : 'mod-warning')).toBe(true);
@@ -74,5 +74,13 @@ describe('restoration confirmation UI', () => {
     expect(signal?.aborted).toBe(true);
     await Promise.resolve();
     expect(Notice).not.toHaveBeenCalled();
+  });
+
+  it('pluralizes added and deleted lines independently', () => {
+    const mixed = computeDiff('old\n', 'new 1\nnew 2\n').changes[0]!;
+    const modal = new RevertChangeModal({} as App, 'example.md', mixed, vi.fn());
+    modal.open();
+    expect(document.body.textContent).toContain('remove 2 added lines and recover 1 deleted line');
+    modal.close();
   });
 });

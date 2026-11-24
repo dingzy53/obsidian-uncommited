@@ -36,7 +36,7 @@ Unicode coverage is still expected: use Latin text with accents and emoji in tes
 
 - Do not reformat, rename, or reorder upstream code.
 - Keep edits to upstream files small and listed here:
-  - `src/main.ts`: install the changes list and hook its settings.
+  - `src/main.ts`: install the changes list, hook its settings, and drop the redundant second ribbon icon.
   - `src/settings.ts`: append the **Changes list** group.
   - `styles.css`: append one delimited changes-list block.
   - `package.json`: add the `install:vault` script.
@@ -79,3 +79,29 @@ Keep `isDesktopOnly: true` and `minAppVersion: 1.8.0`.
 - One logical change per commit. Use an imperative subject.
 - Keep version, manifest, lockfile, and `versions.json` in sync.
 - The README layout is the one used by the owner's other plugin repos: features, requirements, installation, usage, privacy, limitations, development, license.
+
+## Cross-Platform E2E Testing
+
+### Installation
+
+No global `wdio` installation is required; WebdriverIO and `wdio-obsidian-service` live in `devDependencies`.
+
+```bash
+npm ci
+```
+
+- The first E2E run automatically downloads and caches Obsidian binaries into `.obsidian-cache/`.
+- Optional: set `OBSIDIAN_CACHE_DIR=/path/to/shared-cache` to reuse a single Obsidian binary cache across repositories.
+- On headless Linux, run E2E commands under `xvfb-run` (macOS and Windows run directly).
+
+### Testing SOP
+
+1. **On every change** (in `tests/e2e/` and `src/`):
+```bash
+npm run build
+npm run check:mobile
+npm run check
+npm run test:e2e:fast    # Desktop latest Obsidian against test-vault/
+```
+2. **Before PR or release**:
+   - Run `npm run test:e2e` (tests `earliest/earliest` + `latest/latest` Obsidian versions) or push to run `.github/workflows/e2e.yml` (Linux/Windows/macOS desktop).
